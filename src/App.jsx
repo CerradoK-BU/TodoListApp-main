@@ -51,7 +51,7 @@ function App() {
         <Navbar.Brand >
           <h2 className='edit-size'>ToDo List <i className="bi bi-list-task"></i></h2>
         </Navbar.Brand>
-        <Navbar.Toggle className="navbar-toggler-icon" aria-controls="basic-navbar-nav"/>
+        <Navbar.Toggle aria-controls="basic-navbar-nav"/>
         <Navbar.Collapse id="basic-navbar-nav" className="justify-content-end">
           <Nav className="d-flex flex-column align-items-center">
             <h5 className='text-info'>GET NOTIFIED NOW!</h5>
