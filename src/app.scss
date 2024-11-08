@@ -1,0 +1,82 @@
+$table-bg: white;
+$table-th-font-weight: 800;
+$danger: #2CC2E0;
+$primary: #2CC2E0;
+$success: #013974;
+$form-select-indicator-color: #013974;
+$modal-content-color: #013974;
+$modal-content-bg: $danger;
+$nav-tabs-link-active-color: #013974;
+$navbar-light-toggler-border-color: #2CC2E0;
+
+
+body {
+  min-height: 100vh;
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.hero {
+  width: 100%;
+}
+
+.custom-toggle {
+  background-color: #0dcaf0; // Bootstrap 'info' color
+  border: none;
+
+  .navbar-toggler-icon {
+    color: white;
+  }
+}
+
+.edit-size {
+  font-size: 40px;
+  color: #2CC2E0;
+  font-family: Georgia, 'Times New Roman', Times, serif;
+}
+
+.task {
+  font-size: 60px;
+  color: #2CC2E0;
+  font-weight: bold;
+  font-family: Georgia, 'Times New Roman', Times, serif;
+}
+
+.navbar-toggler-icon {
+  background-image: url('./assets/line-3-svgrepo-com.svg');
+  background-size: contain;
+  background-repeat: no-repeat;
+  width: 24px;
+  height: 24px;
+}
+
+
+.formLabel {
+  color: #2CC2E0;
+  font-weight: bold;
+  font-size: 20px;
+  font-family: Georgia, 'Times New Roman', Times, serif;
+}
+
+.form-color {
+  color: #2CC2E0;
+}
+
+.edit-font {
+  font-family: Georgia, 'Times New Roman', Times, serif;
+}
+
+@media only screen and (max-width: 576px) {
+  .edit-size {
+    font-size: 30px;
+  }
+
+  .task {
+    font-size: 40px;
+  }
+}
+
+@import "node_modules/bootstrap/scss/bootstrap";
+@import "bootstrap";
+@import "bootstrap/scss/bootstrap";
