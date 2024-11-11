@@ -1,6 +1,8 @@
 import axios from 'axios';
+import { v4 as uuid } from "uuid";
 
 const API_BASE_URL = 'http://localhost:8080/api/ToDoList';
+const unique_id = uuid();
 
 export const addTask = (task) => {
     const email = localStorage.getItem('userEmail');
@@ -16,8 +18,12 @@ export const addTask = (task) => {
         ...task, 
         userEmail: email,
         title: title,
-        email: email
+        email: email,
+        idTask: unique_id
     };
+    localStorage.setItem('idTask', taskWithEmailAndTitle.idTask);
+    const taskId = localStorage.getItem('idTask');
+    console.log(taskId);
 
     return axios.post(API_BASE_URL, taskWithEmailAndTitle)
         .then(response => response.data)
@@ -48,8 +54,8 @@ export const getTasksByUserEmail = (email) => {
       });
   };
 
-export const updateTask = (taskId, updatedTask) => {
-    return axios.put(`${API_BASE_URL}/${taskId}`, updatedTask)
+  export const updateTask = (id, updatedTask) => {
+    return axios.put(`${API_BASE_URL}/${id}`, updatedTask)
         .then(response => {
             console.log('Task updated successfully:', response.data);
             return response.data;
@@ -60,9 +66,8 @@ export const updateTask = (taskId, updatedTask) => {
         });
 };
 
-
-export const deleteTask = (taskId) => {
-    return axios.delete(`${API_BASE_URL}/${taskId}`)
+export const deleteTask = (id) => {
+    return axios.delete(`${API_BASE_URL}/${id}`)
         .then(response => {
             console.log('Task deleted successfully');
             return response.data;

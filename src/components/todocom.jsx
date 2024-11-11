@@ -1,7 +1,7 @@
 import { Component } from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import TaskForm from './TaskForm';
-import { addTask, updateTask, getTasksByUserEmail } from '../service/TaskService';
+import { addTask, updateTask, getTasksByUserEmail, deleteTask } from '../service/TaskService';
 import { Button, Table, Form, Modal, InputGroup, Tab, Tabs, Navbar, Container, NavItem } from 'react-bootstrap';
 import "bootstrap-icons/font/bootstrap-icons.css";
 import '../app.scss';
@@ -29,7 +29,7 @@ class Todo extends Component {
       tasksToComplete: [],
       tasksToDelete: [],
       selectAllCompleteChecked: false,
-      selectAllDeleteChecked: false,
+      selectAllDeleteChecked: false
     };
     this.handleTaskSubmit = this.handleTaskSubmit.bind(this);
     this.handleEdit = this.handleEdit.bind(this);
@@ -54,6 +54,8 @@ class Todo extends Component {
         return { ...task, status: 'Overdue' };
       } else if (this.isTaskInProgress(task.startDate, task.endDate, task.status)) {
         return { ...task, status: 'In Progress' };
+      } else if (this.isTaskOverdueAndCompleted(task)) { 
+        return { ...task, status: 'Completed but Overdue'};
       } else {
         return task;
       }
@@ -66,13 +68,14 @@ class Todo extends Component {
 
   async componentDidMount() {
     const email = localStorage.getItem('userEmail');
+    if (email) { this.setState({ email });}
     try {
       const tasks = await getTasksByUserEmail(email);
       this.setState({ submittedData: tasks || [] });
     } catch (error) {
       console.error("Error fetching tasks:", error);
     }
-    this.intervalId = setInterval(() => this.updateTaskStatuses());
+    this.intervalId = setInterval(() => this.updateTaskStatuses(), 5000);
   }
   
 
@@ -99,7 +102,7 @@ class Todo extends Component {
     const currentDate = new Date();
     let completedDate = '';
     if (formData.status === 'Completed') {
-      completedDate = currentDate.toLocaleString();
+      completedDate = currentDate.toISOString();
     }
   
     const taskWithStatus = {
@@ -109,13 +112,27 @@ class Todo extends Component {
   
     const saveTaskToBackend = async (task) => {
       try {
-        await addTask(task);
+        const newTask = await addTask(task);
+        this.setState((prevState) => ({
+          input: formData.task,
+          submittedData: [...prevState.submittedData, newTask],
+          showSuccessModal: true,
+        }));
         console.log('Task synced with backend successfully');
       } catch (error) {
         console.error('Error syncing task with backend:', error);
       }
     };
-  
+
+    const updateTaskToBackend = async (id, task) => {
+        try {
+          await updateTask(id, task);
+          console.log('Task updated with backend successfully');
+        } catch (error) {
+          console.error('Error syncing task with backend:', error);
+        }
+      };
+
     if (this.state.editMode) {
       const updatedSubmittedData = this.state.submittedData.map((data, index) =>
         index === this.state.editIndex ? taskWithStatus : data
@@ -126,29 +143,29 @@ class Todo extends Component {
         editedTaskData: null,
         editMode: false,
       });
-  
-      this.saveToLocalStorage(updatedSubmittedData);
-      saveTaskToBackend(taskWithStatus);
+      updateTaskToBackend(this.state.id, taskWithStatus);
+      this.saveToLocalStorage(this.state.email, updatedSubmittedData);
+
     } else {
-      this.setState((prevState) => ({
-        input: formData.task,
-        submittedData: [...prevState.submittedData, taskWithStatus],
-        showSuccessModal: true,
-      }));
-  
-      this.saveToLocalStorage([...this.state.submittedData, taskWithStatus]);
+      this.saveToLocalStorage(this.state.email, [...this.state.submittedData, taskWithStatus]);
       saveTaskToBackend(taskWithStatus);
     }
+    
   }
 
 
   handleEdit(index) {
+    const userEmail = localStorage.getItem('userEmail');
     const editedTaskData = this.state.submittedData[index];
     this.setState({
       editedTaskData,
       editMode: true,
       editIndex: index,
+      id: editedTaskData.id,
+      email: userEmail
+      
     });
+    console.log(editedTaskData.id);
 
     const tableRef = document.getElementById('table');
     if (tableRef) {
@@ -158,29 +175,40 @@ class Todo extends Component {
 
 
   handleDelete(index) {
-    const taskToDelete = this.state.submittedData[index].task;
+    const taskToDelete = this.state.submittedData[index];
     this.setState({
       showDeleteModal: true,
       deleteIndex: index,
-      taskToDelete: taskToDelete
+
+      id: taskToDelete.id
     });
+    console.log(taskToDelete.id)
   }
 
   confirmDelete = () => {
     const { deleteIndex, submittedData } = this.state;
-    const taskToDelete = submittedData[deleteIndex].task;
+    const taskToDelete = submittedData[deleteIndex];
     const updatedSubmittedData = [...submittedData];
     updatedSubmittedData.splice(deleteIndex, 1);
+
+    const deleteTaskToBackend = async (id) => {
+      try {
+        await deleteTask(id);
+        console.log('Task updated with backend successfully');
+      } catch (error) {
+        console.error('Error syncing task with backend:', error);
+      }
+    };
   
     this.setState({
       submittedData: updatedSubmittedData,
       showDeleteModal: false,
       deleteIndex: null,
-      taskToDelete: taskToDelete,
       showTaskDeletedModal: true
     });
   
     this.saveToLocalStorage(updatedSubmittedData);
+    deleteTaskToBackend(this.state.id);
   
     setTimeout(() => {
       this.setState({ showTaskDeletedModal: false });
@@ -217,9 +245,12 @@ class Todo extends Component {
     const { showModal, confirmIndex, submittedData } = this.state;
     if (!showModal && confirmIndex === null) {
       const task = submittedData[index];
-  
+      console.log(task.id);
       if (task.status !== 'Completed') {
-        this.setState({ showModal: true, confirmIndex: index });
+        this.setState({ showModal: true, 
+          confirmIndex: index,
+          id: task.id,
+        });
       }
     }
   }
@@ -231,22 +262,40 @@ class Todo extends Component {
 
   handleConfirmComplete = () => {
     const { confirmIndex } = this.state;
+    const updateTaskToBackend = async (id, task) => {
+      try {
+        if(task.status === 'Overdue'){
+          task.status = 'Completed but Overdue';
+        }
+        await updateTask(id, task);
+        console.log('Task updated with backend successfully');
+      } catch (error) {
+        console.error('Error syncing task with backend:', error);
+      }
+    };
     if (confirmIndex !== null) {
       const currentDate = new Date();
-      const formattedCompletionDate = currentDate.toLocaleString();
+      const formattedCompletionDate = currentDate.toISOString();
 
       const updatedData = this.state.submittedData.map((data, dataIndex) => {
         if (dataIndex === confirmIndex) {
-          let status = 'Completed';
-          if (data.status === 'Overdue') {
-            status = 'Completed but Overdue';
+          let updatedStatus = 'Completed';
+          if(data.status === 'Overdue' && currentDate > (data.endDate && !data.completedDate)){
+            updatedStatus = 'Completed but Overdue'
+          }else{
+            updatedStatus = 'Completed'
           }
-          return { ...data, status: status, completedDate: formattedCompletionDate };
+          return { ...data, status: updatedStatus, completedDate: formattedCompletionDate };
         }
         return data;
       });
 
-      this.saveToLocalStorage(updatedData);
+      const taskToUpdate = updatedData[confirmIndex];
+
+      updateTaskToBackend(this.state.id, taskToUpdate)
+      this.saveToLocalStorage(this.state.email, taskToUpdate);
+
+
 
       this.setState({
         submittedData: updatedData,
@@ -300,7 +349,7 @@ class Todo extends Component {
   }
 
   handleConfirmCompleteAll() {
-    const currentDate = new Date().toLocaleString();
+    const currentDate = new Date().toISOString();
     const updatedData = this.state.submittedData.map((task, index) => {
         if (task.status === 'Overdue' && !task.completedDate) {
             return { ...task, status: 'Completed but Overdue', completedDate: currentDate };
@@ -390,7 +439,10 @@ class Todo extends Component {
         return { ...task, status: 'Overdue' };
       } else if (this.isTaskInProgress(task.startDate, task.endDate, task.status)) {
         return { ...task, status: 'In Progress' };
-      } else {
+      } else if (this.isTaskOverdueAndCompleted(task)) { 
+        return { ...task, status: 'Completed but Overdue'};
+      }
+      else {
         return task;
       }
     });

@@ -26,7 +26,7 @@ const Email = () => {
         
       } catch (error) {
         console.error('Error processing your email:', error);
-        alert('There was an error processing your email. Please try again.');
+        alert('Email not yet registered, Register now!');
       }
     } else {
       alert('Please enter a valid email address.');
