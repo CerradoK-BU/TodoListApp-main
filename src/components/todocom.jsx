@@ -1,9 +1,11 @@
 import { Component } from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import TaskForm from './TaskForm';
-import { Button, Table, Form, Modal, InputGroup, Tab, Tabs } from 'react-bootstrap';
+import { addTask, updateTask, getTasksByUserEmail } from '../service/TaskService';
+import { Button, Table, Form, Modal, InputGroup, Tab, Tabs, Navbar, Container, NavItem } from 'react-bootstrap';
 import "bootstrap-icons/font/bootstrap-icons.css";
 import '../app.scss';
+import { useNavigate } from 'react-router-dom';
 
 class Todo extends Component {
   constructor(props) {
@@ -43,6 +45,7 @@ class Todo extends Component {
     this.handleTaskToDeleteChange = this.handleTaskToDeleteChange.bind(this);
     this.handleSelectAllComplete = this.handleSelectAllComplete.bind(this);
     this.handleSelectAllDelete = this.handleSelectAllDelete.bind(this);
+    this.logout = this.logout.bind(this);
   }
 
   updateTaskStatuses() {
@@ -61,22 +64,36 @@ class Todo extends Component {
     });
   }
 
-  componentDidMount() {
+  async componentDidMount() {
+    const email = localStorage.getItem('userEmail');
+    try {
+      const tasks = await getTasksByUserEmail(email);
+      this.setState({ submittedData: tasks || [] });
+    } catch (error) {
+      console.error("Error fetching tasks:", error);
+    }
     this.intervalId = setInterval(() => this.updateTaskStatuses());
   }
+  
 
   componentWillUnmount() {
     clearInterval(this.intervalId);
   }
 
-  loadFromLocalStorage() {
-    const storedData = localStorage.getItem('userProfile');
+  loadFromLocalStorage(email) {
+    if (!email) return null;
+    const storedData = localStorage.getItem(`userProfile_${email}`);
     return storedData ? JSON.parse(storedData) : null;
   }
-
-  saveToLocalStorage(data) {
-    localStorage.setItem('userProfile', JSON.stringify(data));
+  
+  saveToLocalStorage(email, data) {
+    if (email) {
+      localStorage.setItem(`userProfile_${email}`, JSON.stringify(data));
+    } else {
+      console.error("Email is required to save data.");
+    }
   }
+  
 
   handleTaskSubmit(formData) {
     const currentDate = new Date();
@@ -90,9 +107,18 @@ class Todo extends Component {
       completedDate: completedDate,
     };
   
+    const saveTaskToBackend = async (task) => {
+      try {
+        await addTask(task);
+        console.log('Task synced with backend successfully');
+      } catch (error) {
+        console.error('Error syncing task with backend:', error);
+      }
+    };
+  
     if (this.state.editMode) {
       const updatedSubmittedData = this.state.submittedData.map((data, index) =>
-        (index === this.state.editIndex ? taskWithStatus : data)
+        index === this.state.editIndex ? taskWithStatus : data
       );
   
       this.setState({
@@ -102,6 +128,7 @@ class Todo extends Component {
       });
   
       this.saveToLocalStorage(updatedSubmittedData);
+      saveTaskToBackend(taskWithStatus);
     } else {
       this.setState((prevState) => ({
         input: formData.task,
@@ -110,6 +137,7 @@ class Todo extends Component {
       }));
   
       this.saveToLocalStorage([...this.state.submittedData, taskWithStatus]);
+      saveTaskToBackend(taskWithStatus);
     }
   }
 
@@ -349,6 +377,12 @@ class Todo extends Component {
         : this.state.submittedData.map((_, index) => index),
     }));
   }
+
+  logout (){
+    localStorage.removeItem('userEmail');
+  
+    window.location.href = '/ToDoList/login';
+  };
   
   render() {
     const updatedData = this.state.submittedData.map(task => {
@@ -363,6 +397,17 @@ class Todo extends Component {
 
     return (
       <div>
+        <Navbar expand="lg">
+            <Container fluid>
+              <Navbar.Brand>
+                <h2 className="edit-size">ToDo List <i className="bi bi-list-task"></i></h2>
+              </Navbar.Brand>
+              <NavItem>
+                <Button variant='info' onClick={this.logout}>LOGOUT</Button>
+              </NavItem>
+            </Container>
+        </Navbar>
+        <h3 className="text-center py-5 task">ADD TASK</h3>
         <Modal show={this.state.showDeleteModal} onHide={() => this.setState({ showDeleteModal: false })}>
           <Modal.Header closeButton>
             <Modal.Title>Confirmation</Modal.Title>
@@ -481,7 +526,7 @@ class Todo extends Component {
           </InputGroup>
         </Form>
 
-
+                  
         <Table className="mt-3 custom-table" bordered hover responsive >
           <thead className='text-center'>
             <tr>
@@ -533,7 +578,7 @@ class Todo extends Component {
                     />
                   </td>
                   <td className='edit-font' style={{color:'#013974'}}>{index + 1}</td>
-                  <td className='edit-font' style={{color:'#013974'}}>{data.task}</td>
+                  <td className='edit-font' style={{color:'#013974'}}>{data.title}</td>
                   <td className='edit-font' style={{color:'#013974'}}>{data.status}</td>
                   <td className='edit-font' style={{color:'#013974'}}>{new Date(data.startDate).toLocaleString()}</td>
                   <td className='edit-font' style={{color:'#013974'}}>{new Date(data.endDate).toLocaleString()}</td>

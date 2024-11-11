@@ -4,7 +4,7 @@ import { Button, Container, Modal, Form } from 'react-bootstrap';
 import '../app.scss';
 
 const TaskForm = ({ onSubmit, editedData, taskName }) => {
-  const [task, setTask] = useState('');
+  const [title, setTask] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [status, setStatus] = useState('');
@@ -16,7 +16,7 @@ const TaskForm = ({ onSubmit, editedData, taskName }) => {
 
   useEffect(() => {
     if (editedData) {
-      setTask(editedData.task || '');
+      setTask(editedData.title || '');
       setStartDate(editedData.startDate || '');
       setEndDate(editedData.endDate || '');
       setStatus(editedData.status || '');
@@ -25,7 +25,7 @@ const TaskForm = ({ onSubmit, editedData, taskName }) => {
 
   const handleSubmit = (e, isUpdate) => {
     e.preventDefault();
-    if (!task.trim()) {
+    if (!title.trim()) {
       alert('Please enter a task name.');
       return;
     }
@@ -40,7 +40,7 @@ const TaskForm = ({ onSubmit, editedData, taskName }) => {
 
   const handleSubmission = () => {
     let formData = {
-      task,
+      title,
       startDate,
       endDate,
       status,
@@ -109,7 +109,7 @@ const TaskForm = ({ onSubmit, editedData, taskName }) => {
       <Form onSubmit={handleSubmit} id="table">
         <Form.Group className="mb-3">
           <Form.Label className="formLabel">Task:</Form.Label>
-          <Form.Control type="text" value={task} onChange={(e) => setTask(e.target.value)} required placeholder="Enter Task Name"  style={{ color: '#013974', '::placeholder': { color: 'red' } }}/>
+          <Form.Control type="text" value={title} onChange={(e) => setTask(e.target.value)} required placeholder="Enter Task Name"  style={{ color: '#013974', '::placeholder': { color: 'red' } }}/>
         </Form.Group>
         <Form.Group className="mb-3">
           <Form.Label className="formLabel">Start Date:</Form.Label>
