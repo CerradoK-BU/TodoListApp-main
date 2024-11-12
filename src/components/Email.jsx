@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Container, Form, Button } from 'react-bootstrap';
+import { Container, Form, Button, Card } from 'react-bootstrap';
 import { getTasksByUserEmail } from '../service/TaskService';
-import '../app.scss'
 
 const Email = () => {
   const [userEmail, setUserEmail] = useState('');
   const [error, setError] = useState('');
   const navigate = useNavigate();
+
 
   useEffect(() => {
     const savedEmail = localStorage.getItem('userEmail');
@@ -22,7 +22,7 @@ const Email = () => {
         await getTasksByUserEmail(userEmail);
         alert('Welcome back! Redirecting to your tasks.');
         localStorage.setItem('userEmail', userEmail);
-        navigate(`/ToDoList/tasks?email=${userEmail}`);
+        navigate(`/tasks?email=${userEmail}`);
         
       } catch (error) {
         console.error('Error processing your email:', error);
@@ -33,26 +33,40 @@ const Email = () => {
     }
   };
 
+  function goToRegister () {
+    navigate('/notificationregister')
+  }
+
+  const goToHome = () => {
+    window.location.href = '/portfolio'
+  }
+
   return (
-    <Container className="d-flex justify-content-center align-items-center vh-100">
-      <Form>
-        <h2 className="text-center">Enter Your Email for Notifications</h2>
-        <Form.Group controlId="formEmail">
-          <Form.Label>Email Address:</Form.Label>
-          <Form.Control
-            type="email"
-            placeholder="Enter your email"
-            value={userEmail}
-            onChange={(e) => setUserEmail(e.target.value)}
-          />
-        </Form.Group>
-        <p>Dont have an account? <a className='register' href="/ToDoList/register">Register to save your tasks</a> </p>
-        {error && <p className="text-danger">{error}</p>}
-        <Button variant="primary" onClick={handleEmailAction} className="mt-3">
-          Proceed
-        </Button>
-      </Form>
-    </Container>
+    <div className='email-container'>
+      <Button className='gotobtn mt-4 ms-4' onClick={goToHome}>Back to Portfolio</Button>
+      <Container className="d-flex justify-content-center align-items-center vh-100">
+        <Card className='p-5 card-cont'>
+          <Form className='emailform'>
+            <h2 className="text-center mb-4">Enter Your Email for Notifications</h2>
+            <Form.Group controlId="formEmail">
+              <Form.Label className='email'>Email Address:</Form.Label>
+              <Form.Control
+                type="email"
+                placeholder="Enter your email"
+                value={userEmail}
+                onChange={(e) => setUserEmail(e.target.value)}
+                style={{color: '#013974'}}
+              />
+            </Form.Group>
+            <p className='mt-2'>Dont have an account? <a className='register' onClick={goToRegister}>Register to save your tasks</a> </p>
+            {error && <p className="text-danger">{error}</p>}
+            <Button onClick={handleEmailAction} className="mt-3 proceedbtn">
+              Proceed
+            </Button>
+          </Form>
+        </Card>
+      </Container>
+    </div>
   );
 };
 

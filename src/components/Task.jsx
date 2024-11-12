@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { getTasks, addTask, updateTask, deleteTask } from '../service/TaskService';
 import { Table, Button, Modal, Form } from 'react-bootstrap';
-import 'bootstrap/dist/css/bootstrap.min.css';
+
 
 const TaskComponent = ({ onTaskEdit }) => {
   const [tasks, setTasks] = useState([]);

@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
-
 import 'bootstrap/dist/css/bootstrap.min.css';
-import { Container, Row, Col, Navbar, Button } from 'react-bootstrap';
+import { Container, Row, Col} from 'react-bootstrap';
 import Todo from './components/todocom';
 import Email from './components/Email';
 import Register from './components/Register';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import './app.scss';
+import './App.css';
 
 function App() {
   const [email, setEmail] = useState('');
@@ -26,9 +26,9 @@ function App() {
           <Row>
             <Col>
               <Routes>
-                <Route path="/ToDoList/tasks" element={<Todo />} />
-                <Route path="/ToDoList/login" element={<Email />} /> 
-                <Route path="/ToDoList/register" element={<Register/>}></Route>
+                <Route path="/tasks" element={<Todo />} />
+                <Route path="/ToDoList" element={<Email />} /> 
+                <Route path="/notificationregister" element={<Register/>}></Route>
               </Routes>
             </Col>
           </Row>

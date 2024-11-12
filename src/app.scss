@@ -3,52 +3,89 @@ $table-th-font-weight: 800;
 $danger: #2CC2E0;
 $primary: #2CC2E0;
 $success: #013974;
+$secondary: #212529;
 $form-select-indicator-color: #013974;
 $modal-content-color: #013974;
 $modal-content-bg: $danger;
 $nav-tabs-link-active-color: #013974;
 $navbar-light-toggler-border-color: #2CC2E0;
 
+*{
+  font-family: Georgia, 'Times New Roman', Times, serif;
+}
 
 body {
   min-height: 100vh;
   margin: 0;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
 }
 
-.hero {
-  width: 100%;
+.main-container{
+  .logout-btn{
+    color: white;
+    background-color: $danger;
+  }
+  .edit-size {
+    font-size: 40px;
+    color: $danger;
+  }
+  .task {
+    font-size: 60px;
+    color: $danger;
+    font-weight: bold;
+  }
+  .custom-table{
+    .edit-font-th{
+        color: $danger;
+    }
+    .edit-font-td{
+      color: $success;
+    }
+  }
 }
 
-.edit-size {
-  font-size: 40px;
-  color: #2CC2E0;
-  font-family: Georgia, 'Times New Roman', Times, serif;
+.task-container{
+  .formTask{
+    .formLabel {
+      color: $danger;
+      font-weight: bold;
+      font-size: 20px;
+    }
+    .submitfont{
+      background-color: $success;
+      color: $table-bg;
+      font-size: 20px;
+    }
+  }
 }
 
-.task {
-  font-size: 60px;
-  color: #2CC2E0;
-  font-weight: bold;
-  font-family: Georgia, 'Times New Roman', Times, serif;
+.email-container{
+  .card-cont {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1), 0 6px 20px rgba(0, 0, 0, 0.1);
+    border-radius: 10px; 
+
+    .emailform{
+      h2, .email, p{
+        color: $secondary;
+      }
+      .proceedbtn{
+        font-size: 20px;
+        color: $table-bg;
+        box-shadow: 0px 0px 10px 0px rgba(44, 194, 224, 0.5);
+        display: flex;
+        justify-content: center;
+      }
+    }
+  }  
+  .gotobtn{
+    font-size: 20px;
+    color: $table-bg;
+    box-shadow: 0px 0px 10px 0px rgba(44, 194, 224, 0.5);
+  }
 }
 
-
-.formLabel {
-  color: #2CC2E0;
-  font-weight: bold;
-  font-size: 20px;
-  font-family: Georgia, 'Times New Roman', Times, serif;
-}
-
-.form-color {
-  color: #2CC2E0;
-}
-
-.edit-font {
-  font-family: Georgia, 'Times New Roman', Times, serif;
-}
 
 @media only screen and (max-width: 576px) {
   .edit-size {

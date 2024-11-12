@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import 'bootstrap/dist/css/bootstrap.min.css';
+
 import { Button, Container, Modal, Form } from 'react-bootstrap';
-import '../app.scss';
 
 const TaskForm = ({ onSubmit, editedData, taskName }) => {
   const [title, setTask] = useState('');
@@ -78,6 +77,7 @@ const TaskForm = ({ onSubmit, editedData, taskName }) => {
   };
 
   return (
+    <div className='task-container'>
     <Container fluid>
       <Modal show={showConfirmationModal} onHide={() => setShowConfirmationModal(false)}>
         <Modal.Header closeButton>
@@ -106,7 +106,7 @@ const TaskForm = ({ onSubmit, editedData, taskName }) => {
         </Modal.Footer>
       </Modal>
 
-      <Form onSubmit={handleSubmit} id="table">
+      <Form onSubmit={handleSubmit} id="table" className='formTask'>
         <Form.Group className="mb-3">
           <Form.Label className="formLabel">Task:</Form.Label>
           <Form.Control type="text" value={title} onChange={(e) => setTask(e.target.value)} required placeholder="Enter Task Name"  style={{ color: '#013974', '::placeholder': { color: 'red' } }}/>
@@ -134,16 +134,18 @@ const TaskForm = ({ onSubmit, editedData, taskName }) => {
               In Progress
             </option>
             {new Date(startDate) > new Date() && <option className="edit-font" value="Not Started">Not Started</option>}
+            {/* {new Date(endDate) < new Date() && <option className="edit-font" value="Completed but Overdue">Completed but Overdue</option>} */}
           </Form.Select>
         </Form.Group>
 
         <div className="text-center">
-          <Button className="submitfont me-2" type="submit" variant="flat" hover style={{ backgroundColor: '#013974', color: '#F8FFFE', fontSize: '23px', fontWeight: 'bold', fontFamily: "Georgia, 'Times New Roman', Times, serif" }}>
+          <Button className="submitfont me-2" type="submit" variant="flat" hover >
             {editedData ? 'Update' : 'Submit'}
           </Button>
         </div>
       </Form>
     </Container>
+    </div>
   );
 };
 

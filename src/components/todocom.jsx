@@ -1,10 +1,8 @@
 import { Component } from 'react';
-import 'bootstrap/dist/css/bootstrap.min.css';
 import TaskForm from './TaskForm';
 import { addTask, updateTask, getTasksByUserEmail, deleteTask } from '../service/TaskService';
 import { Button, Table, Form, Modal, InputGroup, Tab, Tabs, Navbar, Container, NavItem } from 'react-bootstrap';
 import "bootstrap-icons/font/bootstrap-icons.css";
-import '../app.scss';
 import { useNavigate } from 'react-router-dom';
 
 class Todo extends Component {
@@ -48,23 +46,29 @@ class Todo extends Component {
     this.logout = this.logout.bind(this);
   }
 
-  updateTaskStatuses() {
-    const updatedData = this.state.submittedData.map(task => {
-      if (this.isTaskOverdueAndInProgress(task.endDate, task.status)) {
-        return { ...task, status: 'Overdue' };
-      } else if (this.isTaskInProgress(task.startDate, task.endDate, task.status)) {
-        return { ...task, status: 'In Progress' };
-      } else if (this.isTaskOverdueAndCompleted(task)) { 
-        return { ...task, status: 'Completed but Overdue'};
-      } else {
-        return task;
-      }
-    });
+  updateTaskStatuses = async () => {
+  const updatedData = this.state.submittedData.map(task => {
+    if (this.isTaskOverdueAndInProgress(task.endDate, task.status)) {
+      return { ...task, status: 'Overdue' };
+    } else if (this.isTaskInProgress(task.startDate, task.endDate, task.status)) {
+      return { ...task, status: 'In Progress' };
+    } else if (this.isTaskOverdueAndCompleted(task)) { 
+      return { ...task, status: 'Completed but Overdue'};
+    } else {
+      return task;
+    }
+  });
 
-    this.setState({
-      submittedData: updatedData,
-    });
-  }
+  this.setState({ submittedData: updatedData });
+
+  // try {
+  //   await updateMultipleTasks(updatedData);
+  //   console.log('Backend updated with new task statuses');
+  // } catch (error) {
+  //   console.error('Error updating backend with new task statuses:', error);
+  // }
+}
+
 
   async componentDidMount() {
     const email = localStorage.getItem('userEmail');
@@ -78,7 +82,6 @@ class Todo extends Component {
     this.intervalId = setInterval(() => this.updateTaskStatuses(), 5000);
   }
   
-
   componentWillUnmount() {
     clearInterval(this.intervalId);
   }
@@ -97,12 +100,13 @@ class Todo extends Component {
     }
   }
   
-
   handleTaskSubmit(formData) {
     const currentDate = new Date();
     let completedDate = '';
     if (formData.status === 'Completed') {
       completedDate = currentDate.toISOString();
+    }else if (formData.status === 'Completed but Overdue') {
+      completedDate = currentDate.toLocaleString();
     }
   
     const taskWithStatus = {
@@ -144,6 +148,7 @@ class Todo extends Component {
         editMode: false,
       });
       updateTaskToBackend(this.state.id, taskWithStatus);
+      getTasksByUserEmail(this.state.email)
       this.saveToLocalStorage(this.state.email, updatedSubmittedData);
 
     } else {
@@ -152,7 +157,6 @@ class Todo extends Component {
     }
     
   }
-
 
   handleEdit(index) {
     const userEmail = localStorage.getItem('userEmail');
@@ -163,7 +167,6 @@ class Todo extends Component {
       editIndex: index,
       id: editedTaskData.id,
       email: userEmail
-      
     });
     console.log(editedTaskData.id);
 
@@ -172,7 +175,6 @@ class Todo extends Component {
       tableRef.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   }
-
 
   handleDelete(index) {
     const taskToDelete = this.state.submittedData[index];
@@ -254,7 +256,6 @@ class Todo extends Component {
       }
     }
   }
-  
 
   handleCloseModal = () => {
     this.setState({ showModal: false, confirmIndex: null });
@@ -294,8 +295,6 @@ class Todo extends Component {
 
       updateTaskToBackend(this.state.id, taskToUpdate)
       this.saveToLocalStorage(this.state.email, taskToUpdate);
-
-
 
       this.setState({
         submittedData: updatedData,
@@ -430,7 +429,7 @@ class Todo extends Component {
   logout (){
     localStorage.removeItem('userEmail');
   
-    window.location.href = '/ToDoList/login';
+    window.location.href = '/ToDoList';
   };
   
   render() {
@@ -448,14 +447,14 @@ class Todo extends Component {
     });
 
     return (
-      <div>
+      <div className='main-container'>
         <Navbar expand="lg">
             <Container fluid>
               <Navbar.Brand>
                 <h2 className="edit-size">ToDo List <i className="bi bi-list-task"></i></h2>
               </Navbar.Brand>
               <NavItem>
-                <Button variant='info' onClick={this.logout}>LOGOUT</Button>
+                <Button className='logout-btn' onClick={this.logout}>LOGOUT</Button>
               </NavItem>
             </Container>
         </Navbar>
@@ -578,7 +577,6 @@ class Todo extends Component {
           </InputGroup>
         </Form>
 
-                  
         <Table className="mt-3 custom-table" bordered hover responsive >
           <thead className='text-center'>
             <tr>
@@ -596,17 +594,17 @@ class Todo extends Component {
                   }}
                 />
               </th>
-              <th className='edit-font' style={{color:'#013974'}}>#</th>
-              <th className='edit-font' style={{color:'#013974'}}>Task</th>
-              <th className='edit-font' style={{color:'#013974'}}>Status</th>
-              <th className='edit-font' style={{color:'#013974'}}>Start Date</th>
-              <th className='edit-font' style={{color:'#013974'}}>Due by:</th>
-              <th className='edit-font' style={{color:'#013974'}}>Actions</th>
-              <th className='edit-font' style={{color:'#013974'}}>Completed by:</th>
+              <th className='edit-font-th' >#</th>
+              <th className='edit-font-th' >Task</th>
+              <th className='edit-font-th' >Status</th>
+              <th className='edit-font-th' >Start Date</th>
+              <th className='edit-font-th' >Due by:</th>
+              <th className='edit-font-th' >Actions</th>
+              <th className='edit-font-th' >Completed by:</th>
             </tr>
           </thead>
           <tbody className='text-center'>
-            {updatedData
+            {this.state.submittedData
               .filter(data => data.status.toLowerCase().includes(this.state.search.toLowerCase()))
               .map((data, index) => (
                 <tr
@@ -629,12 +627,12 @@ class Todo extends Component {
                       disabled={data.completedDate || data.status === 'Completed'}
                     />
                   </td>
-                  <td className='edit-font' style={{color:'#013974'}}>{index + 1}</td>
-                  <td className='edit-font' style={{color:'#013974'}}>{data.title}</td>
-                  <td className='edit-font' style={{color:'#013974'}}>{data.status}</td>
-                  <td className='edit-font' style={{color:'#013974'}}>{new Date(data.startDate).toLocaleString()}</td>
-                  <td className='edit-font' style={{color:'#013974'}}>{new Date(data.endDate).toLocaleString()}</td>
-                  <td className='edit-font' style={{color:'#013974'}}>
+                  <td className='edit-font-td' >{index + 1}</td>
+                  <td className='edit-font-td' >{data.title}</td>
+                  <td className='edit-font-td' >{data.status}</td>
+                  <td className='edit-font-td' >{new Date(data.startDate).toLocaleString()}</td>
+                  <td className='edit-font-td' >{new Date(data.endDate).toLocaleString()}</td>
+                  <td className='edit-font-td' >
                     <Button className='ms-0 ms-md-3 ' onClick={() => this.handleEdit(index)} disabled={data.completedDate || data.status === 'Completed'}>
                       <i className="bi bi-pencil-square"></i>
                     </Button>
@@ -642,7 +640,7 @@ class Todo extends Component {
                       <i className="bi bi-trash-fill"></i>
                     </Button>
                   </td>
-                  <td className='edit-font' style={{color:'#013974'}}>{data.completedDate}</td>
+                  <td className='edit-font-td'>{data.completedDate}</td>
                 </tr>
               ))}
           </tbody>
