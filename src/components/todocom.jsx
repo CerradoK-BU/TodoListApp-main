@@ -1,6 +1,6 @@
 import { Component } from 'react';
 import TaskForm from './TaskForm';
-import { addTask, updateTask, getTasksByUserEmail, deleteTask } from '../service/TaskService';
+import { addTask, updateTask, getTasksByUserEmail, deleteTask, updateTasks } from '../service/TaskService';
 import { Button, Table, Form, Modal, InputGroup, Tab, Tabs, Navbar, Container, NavItem } from 'react-bootstrap';
 import "bootstrap-icons/font/bootstrap-icons.css";
 import { useNavigate } from 'react-router-dom';
@@ -48,7 +48,7 @@ class Todo extends Component {
 
   updateTaskStatuses = async () => {
   const updatedData = this.state.submittedData.map(task => {
-    if (this.isTaskOverdueAndInProgress(task.endDate, task.status)) {
+    if (task.status !== "Completed but Overdue" && this.isTaskOverdueAndInProgress(task.endDate, task.status)) {
       return { ...task, status: 'Overdue' };
     } else if (this.isTaskInProgress(task.startDate, task.endDate, task.status)) {
       return { ...task, status: 'In Progress' };
@@ -60,13 +60,6 @@ class Todo extends Component {
   });
 
   this.setState({ submittedData: updatedData });
-
-  // try {
-  //   await updateMultipleTasks(updatedData);
-  //   console.log('Backend updated with new task statuses');
-  // } catch (error) {
-  //   console.error('Error updating backend with new task statuses:', error);
-  // }
 }
 
 
@@ -100,19 +93,15 @@ class Todo extends Component {
     }
   }
   
-  handleTaskSubmit(formData) {
+  handleTaskSubmit = (formData) => {
     const currentDate = new Date();
     let completedDate = '';
-    if (formData.status === 'Completed') {
-      completedDate = currentDate.toISOString();
-    }else if (formData.status === 'Completed but Overdue') {
-      completedDate = currentDate.toLocaleString();
+
+    if (formData.status === 'Completed' || formData.status === 'Completed but Overdue') {
+      completedDate = this.formatDateForBackend(currentDate); 
     }
-  
-    const taskWithStatus = {
-      ...formData,
-      completedDate: completedDate,
-    };
+
+    const taskWithStatus = { ...formData, completedDate };
   
     const saveTaskToBackend = async (task) => {
       try {
@@ -127,16 +116,16 @@ class Todo extends Component {
         console.error('Error syncing task with backend:', error);
       }
     };
-
+  
     const updateTaskToBackend = async (id, task) => {
-        try {
-          await updateTask(id, task);
-          console.log('Task updated with backend successfully');
-        } catch (error) {
-          console.error('Error syncing task with backend:', error);
-        }
-      };
-
+      try {
+        await updateTask(id, task);
+        console.log('Task updated with backend successfully');
+      } catch (error) {
+        console.error('Error syncing task with backend:', error);
+      }
+    };
+  
     if (this.state.editMode) {
       const updatedSubmittedData = this.state.submittedData.map((data, index) =>
         index === this.state.editIndex ? taskWithStatus : data
@@ -148,15 +137,15 @@ class Todo extends Component {
         editMode: false,
       });
       updateTaskToBackend(this.state.id, taskWithStatus);
-      getTasksByUserEmail(this.state.email)
+      getTasksByUserEmail(this.state.email);
       this.saveToLocalStorage(this.state.email, updatedSubmittedData);
-
+  
     } else {
       this.saveToLocalStorage(this.state.email, [...this.state.submittedData, taskWithStatus]);
       saveTaskToBackend(taskWithStatus);
     }
-    
-  }
+  };
+  
 
   handleEdit(index) {
     const userEmail = localStorage.getItem('userEmail');
@@ -223,7 +212,7 @@ class Todo extends Component {
     const dueDateObject = new Date(dueDate);
     dueDateObject.setSeconds(59, 0);
 
-    return dueDateObject < currentDate && status !== 'Completed';
+    return dueDateObject < currentDate && status !== 'Completed' && status !== 'Completed but Overdue';
   }
 
   isTaskInProgress(startDate, endDate, status) {
@@ -234,7 +223,7 @@ class Todo extends Component {
     if (
       status === 'Not Started' &&
       currentDate >= startDateObject &&
-      currentDate <= endDateObject
+      currentDate <= endDateObject  
     ) {
       return true;
     }
@@ -263,9 +252,13 @@ class Todo extends Component {
 
   handleConfirmComplete = () => {
     const { confirmIndex } = this.state;
+  
+    if (confirmIndex === null) return;
+  
     const updateTaskToBackend = async (id, task) => {
       try {
-        if(task.status === 'Overdue'){
+        // Adjust status if task is overdue
+        if (task.status === 'Overdue') {
           task.status = 'Completed but Overdue';
         }
         await updateTask(id, task);
@@ -274,41 +267,75 @@ class Todo extends Component {
         console.error('Error syncing task with backend:', error);
       }
     };
-    if (confirmIndex !== null) {
-      const currentDate = new Date();
-      const formattedCompletionDate = currentDate.toISOString();
-
-      const updatedData = this.state.submittedData.map((data, dataIndex) => {
-        if (dataIndex === confirmIndex) {
-          let updatedStatus = 'Completed';
-          if(data.status === 'Overdue' && currentDate > (data.endDate && !data.completedDate)){
-            updatedStatus = 'Completed but Overdue'
-          }else{
-            updatedStatus = 'Completed'
-          }
-          return { ...data, status: updatedStatus, completedDate: formattedCompletionDate };
-        }
-        return data;
-      });
-
-      const taskToUpdate = updatedData[confirmIndex];
-
-      updateTaskToBackend(this.state.id, taskToUpdate)
-      this.saveToLocalStorage(this.state.email, taskToUpdate);
-
-      this.setState({
-        submittedData: updatedData,
-        showModal: false,
-        confirmIndex: null,
-      });
-    }
-  };
-
-  isTaskOverdueAndCompleted(task) {
+  
     const currentDate = new Date();
-    const dueDate = new Date(task.endDate);
-    return task.status === 'Overdue' && task.completedDate && new Date(task.completedDate) <= currentDate && new Date(task.completedDate) > dueDate;
+
+    const formattedCompletionDate = this.formatDateForDisplay(currentDate);
+
+    const backendDate = this.formatDateForBackend(currentDate);
+
+    const updatedData = this.state.submittedData.map((data, dataIndex) => {
+      if (dataIndex === confirmIndex) {
+        let updatedStatus = data.status === 'Overdue' ? 'Completed but Overdue' : 'Completed';
+        return { ...data, status: updatedStatus, completedDate: backendDate };
+      }
+      return data;
+    });
+  
+    const taskToUpdate = updatedData[confirmIndex];
+  
+    updateTaskToBackend(this.state.id, taskToUpdate);
+    this.saveToLocalStorage(this.state.email, taskToUpdate);
+
+    this.setState({
+      submittedData: updatedData,
+      showModal: false,
+      confirmIndex: null,
+    });
+  };
+  
+  formatDateForDisplay(date) {
+    let hours = date.getHours();
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const seconds = String(date.getSeconds()).padStart(2, '0');
+
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    
+    hours = hours % 12;
+    hours = hours ? String(hours).padStart(2, '0') : '12';
+
+    return date.toLocaleString('en-US', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: true,  
+    }) + ' ' + ampm;  
   }
+  
+
+  formatDateForBackend(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const seconds = String(date.getSeconds()).padStart(2, '0');
+  
+    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+  }
+  
+
+  isTaskOverdueAndCompleted = (task, now) => {
+    if (task.completedDate && task.endDate && task.status === "Overdue") {
+      const completedDate = new Date(task.completedDate);
+      const endDate = new Date(task.endDate);
+      return completedDate > endDate && completedDate <= now; 
+    }
+    return false;
+}
 
   handleCloseSuccessModal() {
     this.setState({ showSuccessModal: false }, () => {
@@ -348,7 +375,7 @@ class Todo extends Component {
   }
 
   handleConfirmCompleteAll() {
-    const currentDate = new Date().toISOString();
+    const currentDate = new Date().toLocaleString();
     const updatedData = this.state.submittedData.map((task, index) => {
         if (task.status === 'Overdue' && !task.completedDate) {
             return { ...task, status: 'Completed but Overdue', completedDate: currentDate };
@@ -434,14 +461,13 @@ class Todo extends Component {
   
   render() {
     const updatedData = this.state.submittedData.map(task => {
-      if (this.isTaskOverdueAndInProgress(task.endDate, task.status)) {
+      if (task.status !== "Completed but Overdue" && this.isTaskOverdueAndInProgress(task.endDate, task.status)) {
         return { ...task, status: 'Overdue' };
       } else if (this.isTaskInProgress(task.startDate, task.endDate, task.status)) {
         return { ...task, status: 'In Progress' };
       } else if (this.isTaskOverdueAndCompleted(task)) { 
         return { ...task, status: 'Completed but Overdue'};
-      }
-      else {
+      } else {
         return task;
       }
     });
@@ -610,14 +636,16 @@ class Todo extends Component {
                 <tr
                   key={index}
                   className={
-                    this.isTaskOverdueAndInProgress(data.endDate, data.status)
-                      ? 'table-danger'
+                    this.isTaskOverdueAndInProgress(data.endDate, data.status) && data.status !== "Completed but Overdue"
+                      ? 'table-danger'  // For tasks that are overdue and in progress
                       : data.status === 'Completed'
-                      ? 'table-success'
+                      ? 'table-success'  // For tasks that are completed
                       : data.status === 'Overdue'
-                      ? 'table-danger'
-                      : 'table-light'
-                  }
+                      ? 'table-danger'  // For tasks that are overdue but not completed
+                      : data.status === 'Completed but Overdue'
+                      ? 'table-warning'  // For tasks that are completed but overdue
+                      : 'table-light'  // Default for other tasks
+                  }                                    
                 >
                   <td className='edit-font' >
                     <Form.Check

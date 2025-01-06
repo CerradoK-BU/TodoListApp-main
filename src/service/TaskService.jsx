@@ -43,15 +43,6 @@ export const registerUser = (email) => {
             throw error;
         });
 };
-
-// export const updateMultipleTasks = (tasks) => {
-//     return axios.put(`${API_BASE_URL}/tasks/bulk-update`, tasks)
-//       .then(response => response.data)
-//       .catch(error => {
-//         console.error('Error updating tasks:', error);
-//         throw error;
-//       });
-//   };
   
 export const getTasksByUserEmail = (email) => {
     return axios.get(`${API_BASE_URL}/tasks?email=${email}`)
@@ -85,4 +76,16 @@ export const deleteTask = (id) => {
             throw error;
         });
 };
+
+export const updateTasks = (tasks) => {
+    return axios.put(`${API_BASE_URL}/tasks/batch-update`, tasks)
+        .then(response => {
+            console.log('Tasks updated successfully:', response.data);
+            return response.data
+        })
+        .catch(error => {
+            console.error('Error batch updating tasks:', error);
+            throw error;
+        })
+}
 
